@@ -227,20 +227,28 @@ export const serverDb = {
 
   // Pacientes
   async getPatients(doctorId?: string): Promise<Patient[]> {
+    console.log('🔍 getPatients called with doctorId:', doctorId)
     const pool = getPool()
     if (doctorId) {
       // Si doctorId es un email, buscar el UUID correspondiente
       let actualDoctorId = doctorId
       if (doctorId.includes('@')) {
+        console.log('🔍 Buscando doctor por email:', doctorId)
         const [doctors] = await pool.execute('SELECT id FROM doctors WHERE email = ?', [doctorId])
-      const doctorsArray = doctors as any[]
-      if (doctorsArray.length === 0) {
-        return []
+        const doctorsArray = doctors as any[]
+        console.log('🔍 Doctores encontrados:', doctorsArray)
+        if (doctorsArray.length === 0) {
+          console.log('❌ No se encontró doctor con email:', doctorId)
+          return []
+        }
+        actualDoctorId = doctorsArray[0].id
+        console.log('✅ Doctor ID encontrado:', actualDoctorId)
       }
-      actualDoctorId = doctorsArray[0].id
-      }
+      console.log('🔍 Buscando pacientes para doctor ID:', actualDoctorId)
       const [rows] = await pool.execute('SELECT * FROM patients WHERE doctor_id = ? ORDER BY created_at DESC', [actualDoctorId])
-      return rows as Patient[]
+      const patients = rows as Patient[]
+      console.log('📋 Pacientes encontrados en BD:', patients.length, 'pacientes')
+      return patients
     }
     const [rows] = await pool.execute('SELECT * FROM patients ORDER BY created_at DESC')
     return rows as Patient[]

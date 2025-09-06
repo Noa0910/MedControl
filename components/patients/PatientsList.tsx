@@ -48,7 +48,9 @@ export default function PatientsList() {
         }
 
         const { apiClient } = await import('@/lib/api-client')
+        console.log('🔍 Buscando pacientes para doctor:', user.email)
         const allPatients = await apiClient.getPatients(user.email)
+        console.log('📋 Pacientes encontrados:', allPatients)
         setPatients(allPatients)
       } catch (error) {
         console.error('Error fetching patients:', error)

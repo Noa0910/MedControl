@@ -168,6 +168,22 @@ export default function AppointmentActionModal({
             appointment.patients?.date_of_birth && 
             appointment.patients?.gender
 
+          console.log('🔍 Verificando datos completos:', {
+            first_name: !!appointment.patients?.first_name,
+            last_name: !!appointment.patients?.last_name,
+            document_type: !!appointment.patients?.document_type,
+            document_number: !!appointment.patients?.document_number,
+            date_of_birth: !!appointment.patients?.date_of_birth,
+            gender: !!appointment.patients?.gender,
+            hasCompleteData
+          })
+
+          console.log('🔍 Verificando datos del paciente:', {
+            hasCompleteData,
+            patientData: appointment.patients,
+            formData: formData.patientData
+          })
+
           if (hasCompleteData) {
             // Paciente existente con datos completos - solo actualizar cita y abrir historia clínica
             console.log('✅ Paciente existente con datos completos, actualizando cita y abriendo historia clínica')
@@ -250,10 +266,10 @@ export default function AppointmentActionModal({
                 }
               }))
               
-              // Mostrar formulario de historia clínica
+          // Mostrar formulario de historia clínica
               console.log('🎯 Abriendo formulario de historia clínica para paciente actualizado...')
               console.log('🔍 Estado actual de showClinicalHistory antes:', showClinicalHistory)
-              setShowClinicalHistory(true)
+          setShowClinicalHistory(true)
               setLoading(false)
               console.log('✅ Formulario de historia clínica abierto - showClinicalHistory:', true)
               
@@ -267,8 +283,8 @@ export default function AppointmentActionModal({
             } catch (patientError) {
               console.error('Error updating patient:', patientError)
               alert('Error al actualizar los datos del paciente.')
-              setLoading(false)
-              return
+          setLoading(false)
+          return
             }
           }
           break
@@ -289,9 +305,9 @@ export default function AppointmentActionModal({
 
       // Solo cerrar el modal para reschedule y no_show, no para attend
       if (action === 'reschedule' || action === 'no_show') {
-        await onUpdate(appointment.id, updates)
-        onClose()
-        setAction(null)
+      await onUpdate(appointment.id, updates)
+      onClose()
+      setAction(null)
       }
       
       // Para attend, no cerrar el modal aquí - se maneja en el caso específico
