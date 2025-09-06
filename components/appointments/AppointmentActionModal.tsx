@@ -95,8 +95,17 @@ export default function AppointmentActionModal({
         document_type: appointment.patients?.document_type,
         document_number: appointment.patients?.document_number,
         date_of_birth: appointment.patients?.date_of_birth,
-        gender: appointment.patients?.gender
+        gender: appointment.patients?.gender,
+        first_name: appointment.patients?.first_name,
+        last_name: appointment.patients?.last_name
       })
+      
+      // Debug adicional: verificar cada campo individualmente
+      console.log('🔍 Verificación detallada:')
+      console.log('- document_type:', appointment.patients?.document_type, 'tipo:', typeof appointment.patients?.document_type)
+      console.log('- document_number:', appointment.patients?.document_number, 'tipo:', typeof appointment.patients?.document_number)
+      console.log('- date_of_birth:', appointment.patients?.date_of_birth, 'tipo:', typeof appointment.patients?.date_of_birth)
+      console.log('- gender:', appointment.patients?.gender, 'tipo:', typeof appointment.patients?.gender)
       
       if (hasCompleteData) {
         // Paciente existente con datos completos - ir directamente a historia clínica
