@@ -24,7 +24,28 @@ Sistema completo de agendamiento de citas, historia clínica y gestión médica 
 
 ## 📦 Instalación Rápida
 
-### Opción 1: Con XAMPP (Recomendado)
+### 🌐 Opción 1: Despliegue en Vercel (Recomendado)
+
+1. **Conecta tu repositorio con Vercel**:
+   - Ve a [vercel.com](https://vercel.com)
+   - Conecta tu cuenta de GitHub
+   - Importa el repositorio `Noa0910/MedControl`
+
+2. **Configura las variables de entorno en Vercel**:
+   ```
+   DB_HOST=tu_host_mysql
+   DB_PORT=3306
+   DB_USER=tu_usuario
+   DB_PASSWORD=tu_contraseña
+   DB_NAME=medcontrol
+   NEXT_PUBLIC_APP_URL=https://tu-dominio.com
+   ```
+
+3. **Despliega**:
+   - Vercel detectará automáticamente que es un proyecto Next.js
+   - El despliegue se realizará automáticamente
+
+### 🏠 Opción 2: Desarrollo Local con XAMPP
 
 1. **Instala XAMPP**:
    - Descarga desde: https://www.apachefriends.org/
@@ -52,7 +73,7 @@ Sistema completo de agendamiento de citas, historia clínica y gestión médica 
    - Aplicación: http://localhost:3000
    - phpMyAdmin: http://localhost/phpmyadmin
 
-### Opción 2: Solo localStorage (Demo)
+### 💾 Opción 3: Solo localStorage (Demo)
 
 Si no tienes XAMPP, el sistema funciona automáticamente con localStorage:
 

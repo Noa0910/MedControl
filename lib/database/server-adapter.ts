@@ -228,10 +228,11 @@ export const serverDb = {
       let actualDoctorId = doctorId
       if (doctorId.includes('@')) {
         const [doctors] = await pool.execute('SELECT id FROM doctors WHERE email = ?', [doctorId])
-        if (doctors.length === 0) {
-          return []
-        }
-        actualDoctorId = (doctors[0] as any).id
+      const doctorsArray = doctors as any[]
+      if (doctorsArray.length === 0) {
+        return []
+      }
+      actualDoctorId = doctorsArray[0].id
       }
       const [rows] = await pool.execute('SELECT * FROM patients WHERE doctor_id = ? ORDER BY created_at DESC', [actualDoctorId])
       return rows as Patient[]
@@ -311,10 +312,11 @@ export const serverDb = {
       let actualDoctorId = doctorId
       if (doctorId.includes('@')) {
         const [doctors] = await pool.execute('SELECT id FROM doctors WHERE email = ?', [doctorId])
-        if (doctors.length === 0) {
-          return []
-        }
-        actualDoctorId = (doctors[0] as any).id
+      const doctorsArray = doctors as any[]
+      if (doctorsArray.length === 0) {
+        return []
+      }
+      actualDoctorId = doctorsArray[0].id
       }
       const [rows] = await pool.execute('SELECT * FROM appointments WHERE doctor_id = ? ORDER BY appointment_date DESC, appointment_time DESC', [actualDoctorId])
       return rows as Appointment[]
@@ -425,10 +427,11 @@ export const serverDb = {
       let actualDoctorId = doctorId
       if (doctorId.includes('@')) {
         const [doctors] = await pool.execute('SELECT id FROM doctors WHERE email = ?', [doctorId])
-        if (doctors.length === 0) {
-          return []
-        }
-        actualDoctorId = (doctors[0] as any).id
+      const doctorsArray = doctors as any[]
+      if (doctorsArray.length === 0) {
+        return []
+      }
+      actualDoctorId = doctorsArray[0].id
       }
       const [rows] = await pool.execute('SELECT * FROM medical_records WHERE doctor_id = ? ORDER BY record_date DESC', [actualDoctorId])
       return rows as MedicalRecord[]
@@ -446,10 +449,11 @@ export const serverDb = {
     let doctorId = record.doctor_id
     if (record.doctor_id.includes('@')) {
       const [doctors] = await pool.execute('SELECT id FROM doctors WHERE email = ?', [record.doctor_id])
-      if (doctors.length === 0) {
+      const doctorsArray = doctors as any[]
+      if (doctorsArray.length === 0) {
         throw new Error('Doctor not found')
       }
-      doctorId = (doctors[0] as any).id
+      doctorId = doctorsArray[0].id
     }
     
     await pool.execute(
@@ -506,6 +510,154 @@ export const serverDb = {
     )
 
     return { ...reminder, id, created_at: now, updated_at: now }
+  },
+
+  // Historias Clínicas
+  async createClinicalHistory(historyData: {
+    patient_id: string
+    doctor_id: string
+    appointment_id?: string | null
+    chief_complaint: string
+    current_illness?: string
+    medical_history?: string
+    surgical_history?: string
+    allergies?: string
+    medications?: string
+    vital_signs?: any
+    cardiovascular?: string
+    respiratory?: string
+    neurological?: string
+    gastrointestinal?: string
+    genitourinary?: string
+    musculoskeletal?: string
+    dermatological?: string
+    diagnosis?: string
+    treatment?: string
+    recommendations?: string
+    follow_up?: string
+  }): Promise<any> {
+    const pool = getPool()
+    const id = `hist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const now = new Date().toISOString()
+    
+    // Si doctor_id es un email, buscar el UUID del doctor
+    let actualDoctorId = historyData.doctor_id
+    if (historyData.doctor_id && historyData.doctor_id.includes('@')) {
+      const [doctors] = await pool.execute(
+        'SELECT id FROM doctors WHERE email = ?',
+        [historyData.doctor_id]
+      )
+      if (Array.isArray(doctors) && doctors.length > 0) {
+        actualDoctorId = (doctors[0] as any).id
+      } else {
+        throw new Error('Doctor no encontrado')
+      }
+    }
+    
+    const query = `
+      INSERT INTO clinical_history (
+        id, patient_id, doctor_id, appointment_id, chief_complaint, current_illness,
+        medical_history, surgical_history, allergies, medications, vital_signs,
+        cardiovascular_exam, respiratory_exam, neurological_exam, gastrointestinal_exam,
+        genitourinary_exam, musculoskeletal_exam, dermatological_exam, diagnosis,
+        treatment, recommendations, follow_up, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+    
+    const values = [
+      id,
+      historyData.patient_id,
+      actualDoctorId,
+      historyData.appointment_id || null,
+      historyData.chief_complaint || '',
+      historyData.current_illness || '',
+      historyData.medical_history || '',
+      historyData.surgical_history || '',
+      historyData.allergies || '',
+      historyData.medications || '',
+      JSON.stringify(historyData.vital_signs || {}),
+      historyData.cardiovascular || '',
+      historyData.respiratory || '',
+      historyData.neurological || '',
+      historyData.gastrointestinal || '',
+      historyData.genitourinary || '',
+      historyData.musculoskeletal || '',
+      historyData.dermatological || '',
+      historyData.diagnosis || '',
+      historyData.treatment || '',
+      historyData.recommendations || '',
+      historyData.follow_up || '',
+      now,
+      now
+    ]
+
+    await pool.execute(query, values)
+
+    return { 
+      id, 
+      patient_id: historyData.patient_id, 
+      doctor_id: actualDoctorId, 
+      appointment_id: historyData.appointment_id,
+      created_at: now, 
+      updated_at: now 
+    }
+  },
+
+  async getClinicalHistories(patientId?: string, doctorId?: string): Promise<any[]> {
+    const pool = getPool()
+    
+    let query = `
+      SELECT 
+        ch.*,
+        p.first_name as patient_first_name,
+        p.last_name as patient_last_name,
+        p.phone as patient_phone,
+        p.email as patient_email,
+        d.full_name as doctor_name,
+        d.specialty as doctor_specialty,
+        a.appointment_date,
+        a.appointment_time
+      FROM clinical_history ch
+      LEFT JOIN patients p ON ch.patient_id = p.id
+      LEFT JOIN doctors d ON ch.doctor_id = d.id
+      LEFT JOIN appointments a ON ch.appointment_id = a.id
+    `
+    
+    const conditions = []
+    const values = []
+
+    if (patientId) {
+      conditions.push('ch.patient_id = ?')
+      values.push(patientId)
+    }
+
+    if (doctorId) {
+      // Si es un email, buscar por email del doctor
+      if (doctorId.includes('@')) {
+        conditions.push('d.email = ?')
+        values.push(doctorId)
+      } else {
+        conditions.push('ch.doctor_id = ?')
+        values.push(doctorId)
+      }
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`
+    }
+
+    query += ' ORDER BY ch.created_at DESC'
+
+    const [histories] = await pool.execute(query, values)
+
+    // Parsear JSON fields
+    const historiesArray = histories as any[]
+    const parsedHistories = historiesArray.map((history: any) => ({
+      ...history,
+      vital_signs: history.vital_signs ? JSON.parse(history.vital_signs) : {}
+    }))
+
+    return parsedHistories
   }
 }
 
