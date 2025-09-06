@@ -116,7 +116,6 @@ export default function ClinicalHistoriesPage() {
           (history.chief_complaint || '').toLowerCase().includes(searchLower) ||
           (history.diagnosis || '').toLowerCase().includes(searchLower)
         )
-    }
   })
 
   if (loading) {
