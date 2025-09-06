@@ -248,18 +248,25 @@ export default function AppointmentActionModal({
                 }
               }))
               
-          // Mostrar formulario de historia clínica
+              // Mostrar formulario de historia clínica
               console.log('🎯 Abriendo formulario de historia clínica para paciente actualizado...')
-          setShowClinicalHistory(true)
+              console.log('🔍 Estado actual de showClinicalHistory antes:', showClinicalHistory)
+              setShowClinicalHistory(true)
               setLoading(false)
-              console.log('✅ Formulario de historia clínica abierto')
+              console.log('✅ Formulario de historia clínica abierto - showClinicalHistory:', true)
+              
+              // Forzar re-render para asegurar que se muestre
+              setTimeout(() => {
+                console.log('🔄 Verificando estado después de timeout:', showClinicalHistory)
+              }, 100)
+              
               return
 
             } catch (patientError) {
               console.error('Error updating patient:', patientError)
               alert('Error al actualizar los datos del paciente.')
-          setLoading(false)
-          return
+              setLoading(false)
+              return
             }
           }
           break
@@ -280,10 +287,12 @@ export default function AppointmentActionModal({
 
       // Solo cerrar el modal para reschedule y no_show, no para attend
       if (action === 'reschedule' || action === 'no_show') {
-      await onUpdate(appointment.id, updates)
-      onClose()
-      setAction(null)
+        await onUpdate(appointment.id, updates)
+        onClose()
+        setAction(null)
       }
+      
+      // Para attend, no cerrar el modal aquí - se maneja en el caso específico
       setFormData({
         newDate: '',
         newTime: '',
