@@ -145,8 +145,11 @@ export default function CalendarView() {
         appointmentDate = appointmentDate.split('T')[0]
       }
       
-      const matches = appointmentDate === dateString
-      return matches
+      const dateMatches = appointmentDate === dateString
+      // Solo mostrar citas activas (scheduled, confirmed) - no mostrar completadas, canceladas o no asistió
+      const statusMatches = appointment.status === 'scheduled' || appointment.status === 'confirmed'
+      
+      return dateMatches && statusMatches
     }).sort((a, b) => a.appointment_time.localeCompare(b.appointment_time))
     
     return dayAppointments
