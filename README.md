@@ -34,7 +34,7 @@ Sistema completo de agendamiento de citas, historia clínica y gestión médica 
 2. **Configura el proyecto**:
    ```bash
    # Clona e instala dependencias
-   git clone <repo-url>
+   git clone https://github.com/Noa0910/MedControl.git
    cd MedControl
    npm install
    
