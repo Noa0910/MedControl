@@ -6,6 +6,7 @@ import { Clock, Calendar, User, FileText, X, CheckCircle, AlertCircle, RotateCcw
 import ClinicalHistoryForm from '../medical/ClinicalHistoryForm'
 
 interface Patient {
+  id?: string
   first_name: string
   last_name: string
   phone?: string
@@ -70,7 +71,7 @@ export default function AppointmentActionModal({
 
   if (!isOpen || !appointment) return null
 
-  const handleAction = (selectedAction: 'attend' | 'reschedule' | 'no_show') => {
+  const handleAction = async (selectedAction: 'attend' | 'reschedule' | 'no_show') => {
     setAction(selectedAction)
     
     if (selectedAction === 'reschedule') {
@@ -82,27 +83,46 @@ export default function AppointmentActionModal({
         newTime: format(now, 'HH:mm')
       }))
     } else if (selectedAction === 'attend') {
-      // Pre-llenar con datos del paciente de la cita
-      console.log('📋 Datos del paciente para pre-llenar:', appointment.patients)
-      const patientData = {
-        first_name: appointment.patients?.first_name || '',
-        last_name: appointment.patients?.last_name || '',
-        phone: appointment.patients?.phone || '',
-        email: appointment.patients?.email || '',
-        date_of_birth: appointment.patients?.date_of_birth || '',
-        gender: appointment.patients?.gender || '',
-        address: appointment.patients?.address || '',
-        document_type: appointment.patients?.document_type || '',
-        document_number: appointment.patients?.document_number || '',
-        eps: appointment.patients?.eps || '',
-        marital_status: appointment.patients?.marital_status || '',
-        occupation: appointment.patients?.occupation || ''
+      // Verificar si el paciente ya existe (tiene ID y datos completos)
+      const hasPatientId = appointment.patients?.id && appointment.patients.id !== 'temp'
+      const hasCompleteData = appointment.patients?.document_type && 
+                             appointment.patients?.document_number && 
+                             appointment.patients?.date_of_birth && 
+                             appointment.patients?.gender
+      
+      console.log('🔍 Verificando paciente:', {
+        hasPatientId,
+        hasCompleteData,
+        patient: appointment.patients
+      })
+      
+      if (hasPatientId && hasCompleteData) {
+        // Paciente existente - ir directamente a historia clínica
+        console.log('✅ Paciente existente, yendo a historia clínica')
+        setShowClinicalHistory(true)
+        return
+      } else {
+        // Paciente nuevo o incompleto - mostrar formulario
+        console.log('📝 Paciente nuevo o incompleto, mostrando formulario')
+        const patientData = {
+          first_name: appointment.patients?.first_name || '',
+          last_name: appointment.patients?.last_name || '',
+          phone: appointment.patients?.phone || '',
+          email: appointment.patients?.email || '',
+          date_of_birth: appointment.patients?.date_of_birth || '',
+          gender: appointment.patients?.gender || '',
+          address: appointment.patients?.address || '',
+          document_type: appointment.patients?.document_type || '',
+          document_number: appointment.patients?.document_number || '',
+          eps: appointment.patients?.eps || '',
+          marital_status: appointment.patients?.marital_status || '',
+          occupation: appointment.patients?.occupation || ''
+        }
+        setFormData(prev => ({
+          ...prev,
+          patientData
+        }))
       }
-      console.log('📋 Datos procesados:', patientData)
-      setFormData(prev => ({
-        ...prev,
-        patientData
-      }))
     }
   }
 
@@ -406,7 +426,7 @@ export default function AppointmentActionModal({
                   <div className="space-y-4">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <p className="text-sm text-green-800">
-                        Complete los datos del paciente para crear su perfil y generar la historia clínica.
+                        <strong>Paciente nuevo detectado:</strong> Complete los datos del paciente para crear su perfil y generar la historia clínica.
                       </p>
                     </div>
                     
@@ -747,11 +767,18 @@ export default function AppointmentActionModal({
 
       {/* Formulario de Historia Clínica */}
       {showClinicalHistory && (
-        <ClinicalHistoryForm
-          patient={formData.patientData}
-          onSave={handleClinicalHistorySave}
-          onClose={() => setShowClinicalHistory(false)}
-        />
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Paciente existente:</strong> Proceda a completar la historia clínica del paciente.
+            </p>
+          </div>
+          <ClinicalHistoryForm
+            patient={formData.patientData}
+            onSave={handleClinicalHistorySave}
+            onClose={() => setShowClinicalHistory(false)}
+          />
+        </div>
       )}
     </div>
   )
