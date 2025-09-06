@@ -329,6 +329,7 @@ export const serverDb = {
   },
 
   async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient> {
+    console.log('🔄 updatePatient called with:', { id, updates })
     const pool = getPool()
     const now = new Date().toISOString()
     
@@ -405,11 +406,16 @@ export const serverDb = {
     values.push(id)
     
     const query = `UPDATE patients SET ${updateFields.join(', ')} WHERE id = ?`
+    console.log('🔄 Executing query:', query)
+    console.log('🔄 With values:', values)
+    
     await pool.execute(query, values)
+    console.log('✅ Update query executed successfully')
     
     // Obtener el paciente actualizado
     const [rows] = await pool.execute('SELECT * FROM patients WHERE id = ?', [id])
     const patients = rows as Patient[]
+    console.log('🔄 Retrieved updated patient:', patients[0])
     
     if (patients.length === 0) {
       throw new Error('Patient not found after update')

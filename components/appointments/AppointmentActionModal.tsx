@@ -509,7 +509,7 @@ export default function AppointmentActionModal({
                   <div className="space-y-4">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <p className="text-sm text-green-800">
-                        <strong>Paciente nuevo detectado:</strong> Complete los datos del paciente para crear su perfil y generar la historia clínica.
+                        <strong>Paciente registrado:</strong> Complete los datos del paciente para generar la historia clínica.
                       </p>
                     </div>
                     
