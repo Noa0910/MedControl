@@ -94,12 +94,12 @@ export default function ClinicalHistoriesPage() {
     
     switch (filterType) {
       case 'patient':
-        const fullName = `${history.patient_first_name || ''} ${history.patient_last_name || ''}`.toLowerCase()
-        return fullName.includes(searchLower)
+        const patientFullName = `${history.patient_first_name || ''} ${history.patient_last_name || ''}`.toLowerCase()
+        return patientFullName.includes(searchLower)
       
       case 'document':
-        const patientId = (history.patient_id || '').toLowerCase()
-        return patientId.includes(searchLower)
+        const patientDocId = (history.patient_id || '').toLowerCase()
+        return patientDocId.includes(searchLower)
       
       case 'diagnosis':
         return (history.diagnosis || '').toLowerCase().includes(searchLower)
@@ -130,13 +130,13 @@ export default function ClinicalHistoriesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Historias Clínicas
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Gestiona las historias clínicas de tus pacientes
-          </p>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Historias Clínicas
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Gestiona las historias clínicas de tus pacientes
+        </p>
         </div>
         <button
           onClick={() => setShowSearchForm(!showSearchForm)}
@@ -152,24 +152,24 @@ export default function ClinicalHistoriesPage() {
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
           <div className="space-y-6">
             {/* Búsqueda rápida por nombre */}
-            <div>
+          <div>
               <label className="block text-lg font-semibold text-gray-900 mb-3">
                 🔍 Buscar por Nombre del Paciente
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
+            </label>
+            <div className="flex items-center space-x-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
                     placeholder="Escribe el nombre completo del paciente..."
-                    value={patientFilter}
-                    onChange={(e) => setPatientFilter(e.target.value)}
+                  value={patientFilter}
+                  onChange={(e) => setPatientFilter(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                  />
-                </div>
-                {patientFilter && (
-                  <button
-                    onClick={() => setPatientFilter('')}
+                />
+              </div>
+              {patientFilter && (
+                <button
+                  onClick={() => setPatientFilter('')}
                     className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Limpiar
@@ -198,52 +198,52 @@ export default function ClinicalHistoriesPage() {
                   <button
                     onClick={() => setDocumentFilter('')}
                     className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Limpiar
-                  </button>
-                )}
-              </div>
+                >
+                  Limpiar
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Búsqueda general */}
-            <div>
+          {/* Búsqueda general */}
+          <div>
               <label className="block text-lg font-semibold text-gray-900 mb-3">
                 🔎 Búsqueda Avanzada
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Buscar en historias clínicas..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+            </label>
+            <div className="flex items-center space-x-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Buscar en historias clínicas..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                  />
-                </div>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as any)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                >
-                  <option value="all">Buscar en todo</option>
-                  <option value="patient">Solo en nombres</option>
-                  <option value="document">Solo en documentos</option>
-                  <option value="diagnosis">Solo en diagnósticos</option>
-                  <option value="complaint">Solo en motivos</option>
-                </select>
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Limpiar
-                  </button>
-                )}
+                />
               </div>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as any)}
+                  className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+              >
+                <option value="all">Buscar en todo</option>
+                <option value="patient">Solo en nombres</option>
+                  <option value="document">Solo en documentos</option>
+                <option value="diagnosis">Solo en diagnósticos</option>
+                <option value="complaint">Solo en motivos</option>
+              </select>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                    className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Limpiar
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Contador de resultados */}
+          {/* Contador de resultados */}
             <div className="flex items-center justify-between pt-4 border-t border-gray-200">
               <div className="text-lg text-gray-700">
                 <span className="font-semibold text-blue-600">{filteredHistories.length}</span> de <span className="font-semibold">{histories.length}</span> historias
@@ -252,22 +252,22 @@ export default function ClinicalHistoriesPage() {
                     {patientFilter && <span>• Filtrado por nombre: "{patientFilter}"</span>}
                     {documentFilter && <span>• Filtrado por documento: "{documentFilter}"</span>}
                   </div>
-                )}
-              </div>
-              {(patientFilter || documentFilter || searchTerm) && (
-                <button
-                  onClick={() => {
-                    setPatientFilter('')
-                    setDocumentFilter('')
-                    setSearchTerm('')
-                    setFilterType('all')
-                  }}
-                  className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg transition-colors"
-                >
-                  Limpiar todos los filtros
-                </button>
               )}
             </div>
+              {(patientFilter || documentFilter || searchTerm) && (
+              <button
+                onClick={() => {
+                  setPatientFilter('')
+                    setDocumentFilter('')
+                  setSearchTerm('')
+                  setFilterType('all')
+                }}
+                  className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg transition-colors"
+              >
+                Limpiar todos los filtros
+              </button>
+            )}
+          </div>
           </div>
         )}
         </div>
