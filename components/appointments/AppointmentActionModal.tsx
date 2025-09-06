@@ -266,10 +266,10 @@ export default function AppointmentActionModal({
                 }
               }))
               
-          // Mostrar formulario de historia clínica
+              // Mostrar formulario de historia clínica
               console.log('🎯 Abriendo formulario de historia clínica para paciente actualizado...')
               console.log('🔍 Estado actual de showClinicalHistory antes:', showClinicalHistory)
-          setShowClinicalHistory(true)
+              setShowClinicalHistory(true)
               setLoading(false)
               console.log('✅ Formulario de historia clínica abierto - showClinicalHistory:', true)
               
@@ -283,8 +283,8 @@ export default function AppointmentActionModal({
             } catch (patientError) {
               console.error('Error updating patient:', patientError)
               alert('Error al actualizar los datos del paciente.')
-          setLoading(false)
-          return
+              setLoading(false)
+              return
             }
           }
           break
