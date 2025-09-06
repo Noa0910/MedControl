@@ -181,6 +181,16 @@ export const apiClient = {
     return response.json()
   },
 
+  async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient> {
+    const response = await fetch(`${API_BASE}/patients`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates })
+    })
+    if (!response.ok) throw new Error('Failed to update patient')
+    return response.json()
+  },
+
   // Citas
   async getAppointments(doctorId?: string): Promise<Appointment[]> {
     const url = doctorId ? `${API_BASE}/appointments?doctorId=${doctorId}` : `${API_BASE}/appointments`

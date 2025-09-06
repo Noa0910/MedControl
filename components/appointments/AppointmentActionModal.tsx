@@ -24,6 +24,7 @@ interface Patient {
 interface Appointment {
   id: string
   doctor_id: string
+  patient_id: string
   appointment_date: string
   appointment_time: string
   duration: number
@@ -100,13 +101,6 @@ export default function AppointmentActionModal({
         last_name: appointment.patients?.last_name
       })
       
-      // Debug adicional: verificar cada campo individualmente
-      console.log('🔍 Verificación detallada:')
-      console.log('- document_type:', appointment.patients?.document_type, 'tipo:', typeof appointment.patients?.document_type)
-      console.log('- document_number:', appointment.patients?.document_number, 'tipo:', typeof appointment.patients?.document_number)
-      console.log('- date_of_birth:', appointment.patients?.date_of_birth, 'tipo:', typeof appointment.patients?.date_of_birth)
-      console.log('- gender:', appointment.patients?.gender, 'tipo:', typeof appointment.patients?.gender)
-      
       if (hasCompleteData) {
         // Paciente existente con datos completos - ir directamente a historia clínica
         console.log('✅ Paciente existente con datos completos, yendo a historia clínica')
@@ -135,15 +129,15 @@ export default function AppointmentActionModal({
         setShowClinicalHistory(true)
         return
       } else {
-        // Paciente nuevo o incompleto - mostrar formulario
-        console.log('📝 Paciente nuevo o incompleto, mostrando formulario')
-        const patientData = {
-          first_name: appointment.patients?.first_name || '',
-          last_name: appointment.patients?.last_name || '',
-          phone: appointment.patients?.phone || '',
-          email: appointment.patients?.email || '',
-          date_of_birth: appointment.patients?.date_of_birth || '',
-          gender: appointment.patients?.gender || '',
+        // Paciente registrado pero sin datos completos - mostrar formulario para completar
+        console.log('📝 Paciente registrado pero sin datos completos, mostrando formulario para completar')
+      const patientData = {
+        first_name: appointment.patients?.first_name || '',
+        last_name: appointment.patients?.last_name || '',
+        phone: appointment.patients?.phone || '',
+        email: appointment.patients?.email || '',
+        date_of_birth: appointment.patients?.date_of_birth || '',
+        gender: appointment.patients?.gender || '',
           address: appointment.patients?.address || '',
           document_type: appointment.patients?.document_type || '',
           document_number: appointment.patients?.document_number || '',
@@ -151,10 +145,10 @@ export default function AppointmentActionModal({
           marital_status: appointment.patients?.marital_status || '',
           occupation: appointment.patients?.occupation || ''
         }
-        setFormData(prev => ({
-          ...prev,
-          patientData
-        }))
+      setFormData(prev => ({
+        ...prev,
+        patientData
+      }))
       }
     }
   }
@@ -175,8 +169,8 @@ export default function AppointmentActionModal({
             appointment.patients?.gender
 
           if (hasCompleteData) {
-            // Paciente existente - solo actualizar cita y abrir historia clínica
-            console.log('✅ Paciente existente, actualizando cita y abriendo historia clínica')
+            // Paciente existente con datos completos - solo actualizar cita y abrir historia clínica
+            console.log('✅ Paciente existente con datos completos, actualizando cita y abriendo historia clínica')
             
             updates = {
               status: 'completed',
@@ -192,7 +186,9 @@ export default function AppointmentActionModal({
             console.log('✅ Formulario de historia clínica abierto')
             return
           } else {
-            // Paciente nuevo o incompleto - validar y crear
+            // Paciente registrado pero sin datos completos - actualizar datos existentes
+            console.log('📝 Paciente registrado pero sin datos completos, actualizando datos existentes')
+            
             const requiredFields = ['first_name', 'last_name', 'document_type', 'document_number', 'date_of_birth', 'gender', 'phone', 'email', 'address']
             const missingFields = requiredFields.filter(field => !formData.patientData[field as keyof typeof formData.patientData])
             
@@ -203,92 +199,70 @@ export default function AppointmentActionModal({
             }
 
             try {
-              // Verificar si el paciente ya existe por documento
+              // Verificar si ya existe un paciente con el mismo documento (para evitar duplicados)
               const { apiClient } = await import('@/lib/api-client')
               const existingPatients = await apiClient.getPatients()
               const existingPatient = existingPatients.find(p => 
                 p.document_type === formData.patientData.document_type && 
-                p.document_number === formData.patientData.document_number
+                p.document_number === formData.patientData.document_number &&
+                p.id !== appointment.patient_id // Excluir el paciente actual
               )
 
               if (existingPatient) {
-                // Paciente ya existe - usar el existente
-                console.log('✅ Paciente ya existe, usando el existente:', existingPatient)
-                
-                updates = {
-                  status: 'completed',
-                  patient_id: existingPatient.id
-                }
-
-                await onUpdate(appointment.id, updates)
-                
-                // Actualizar formData con el paciente existente
-                setFormData(prev => ({
-                  ...prev,
-                  patientData: {
-                    ...prev.patientData,
-                    id: existingPatient.id
-                  }
-                }))
-                
-                // Mostrar formulario de historia clínica
-                console.log('🎯 Abriendo formulario de historia clínica para paciente existente...')
-                setShowClinicalHistory(true)
+                // Ya existe otro paciente con el mismo documento
+                console.error('❌ Ya existe otro paciente con el mismo documento:', existingPatient)
+                alert(`Ya existe otro paciente con el documento ${formData.patientData.document_type} ${formData.patientData.document_number}: ${existingPatient.first_name} ${existingPatient.last_name}`)
                 setLoading(false)
-                console.log('✅ Formulario de historia clínica abierto')
-                return
-              } else {
-                // Crear nuevo paciente
-                const patientData = {
-                  doctor_id: appointment.doctor_id,
-                  first_name: formData.patientData.first_name,
-                  last_name: formData.patientData.last_name,
-                  phone: formData.patientData.phone,
-                  email: formData.patientData.email,
-                  date_of_birth: formData.patientData.date_of_birth,
-                  gender: formData.patientData.gender as 'male' | 'female' | 'other' | undefined,
-                  address: formData.patientData.address,
-                  document_type: formData.patientData.document_type,
-                  document_number: formData.patientData.document_number,
-                  eps: formData.patientData.eps,
-                  marital_status: formData.patientData.marital_status,
-                  occupation: formData.patientData.occupation
-                }
-
-                const newPatient = await apiClient.createPatient(patientData)
-                console.log('✅ Paciente nuevo creado:', newPatient)
-
-                // Actualizar la cita con el ID del paciente
-                updates = {
-                  status: 'completed',
-                  patient_id: newPatient.id
-                }
-
-                await onUpdate(appointment.id, updates)
-                
-                // Actualizar los datos del paciente en formData con el ID del nuevo paciente
-                setFormData(prev => ({
-                  ...prev,
-                  patientData: {
-                    ...prev.patientData,
-                    id: newPatient.id
-                  }
-                }))
-                
-                // Mostrar formulario de historia clínica
-                console.log('🎯 Abriendo formulario de historia clínica para paciente nuevo...')
-                setShowClinicalHistory(true)
-                setLoading(false)
-                console.log('✅ Formulario de historia clínica abierto')
                 return
               }
-            } catch (patientError) {
-              console.error('Error creating patient:', patientError)
-              alert('Error al crear el paciente. Verifique que no exista ya un paciente con el mismo documento.')
+
+              // Actualizar el paciente existente con los datos completos
+              console.log('🔄 Actualizando paciente existente con datos completos...')
+              const updatedPatient = await apiClient.updatePatient(appointment.patient_id, {
+                document_type: formData.patientData.document_type,
+                document_number: formData.patientData.document_number,
+                date_of_birth: formData.patientData.date_of_birth,
+                gender: formData.patientData.gender as 'male' | 'female' | 'other',
+                address: formData.patientData.address,
+                eps: formData.patientData.eps,
+                marital_status: formData.patientData.marital_status,
+                occupation: formData.patientData.occupation
+              })
+              
+              console.log('✅ Paciente actualizado:', updatedPatient)
+
+              // Actualizar la cita como completada
+          updates = {
+            status: 'completed',
+                patient_id: appointment.patient_id
+              }
+
+              await onUpdate(appointment.id, updates)
+              
+              // Actualizar formData con el paciente actualizado
+              setFormData(prev => ({
+                ...prev,
+                patientData: {
+                  ...prev.patientData,
+                  id: appointment.patient_id
+                }
+              }))
+              
+          // Mostrar formulario de historia clínica
+              console.log('🎯 Abriendo formulario de historia clínica para paciente actualizado...')
+          setShowClinicalHistory(true)
               setLoading(false)
+              console.log('✅ Formulario de historia clínica abierto')
               return
+
+            } catch (patientError) {
+              console.error('Error updating patient:', patientError)
+              alert('Error al actualizar los datos del paciente.')
+          setLoading(false)
+          return
             }
           }
+          break
         case 'reschedule':
           updates = {
             appointment_date: formData.newDate,
@@ -305,10 +279,10 @@ export default function AppointmentActionModal({
       }
 
       // Solo cerrar el modal para reschedule y no_show, no para attend
-      if (action !== 'attend') {
-        await onUpdate(appointment.id, updates)
-        onClose()
-        setAction(null)
+      if (action === 'reschedule' || action === 'no_show') {
+      await onUpdate(appointment.id, updates)
+      onClose()
+      setAction(null)
       }
       setFormData({
         newDate: '',
@@ -544,36 +518,36 @@ export default function AppointmentActionModal({
                       <h4 className="text-md font-medium text-gray-800 border-b border-gray-200 pb-2">
                         Información Personal
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                             Nombre del Paciente *
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.patientData.first_name}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              patientData: { ...prev.patientData, first_name: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Nombre"
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.patientData.first_name}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, first_name: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Nombre"
                             required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                             Apellido *
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.patientData.last_name}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              patientData: { ...prev.patientData, last_name: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Apellido"
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.patientData.last_name}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, last_name: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Apellido"
                             required
                           />
                         </div>
@@ -627,10 +601,10 @@ export default function AppointmentActionModal({
                             }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                             Sexo/Género *
                           </label>
                           <select
@@ -660,32 +634,32 @@ export default function AppointmentActionModal({
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Teléfono/Celular *
-                          </label>
-                          <input
-                            type="tel"
-                            value={formData.patientData.phone}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              patientData: { ...prev.patientData, phone: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Teléfono"
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.patientData.phone}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, phone: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Teléfono"
                             required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                             Email *
-                          </label>
-                          <input
-                            type="email"
-                            value={formData.patientData.email}
-                            onChange={(e) => setFormData(prev => ({
-                              ...prev,
-                              patientData: { ...prev.patientData, email: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Email"
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.patientData.email}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, email: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Email"
                             required
                           />
                         </div>
@@ -882,11 +856,11 @@ export default function AppointmentActionModal({
               <strong>Paciente creado:</strong> Proceda a completar la historia clínica del paciente.
             </p>
           </div>
-          <ClinicalHistoryForm
-            patient={formData.patientData}
-            onSave={handleClinicalHistorySave}
-            onClose={() => setShowClinicalHistory(false)}
-          />
+        <ClinicalHistoryForm
+          patient={formData.patientData}
+          onSave={handleClinicalHistorySave}
+          onClose={() => setShowClinicalHistory(false)}
+        />
         </div>
       )}
       

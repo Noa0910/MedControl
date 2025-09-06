@@ -29,3 +29,25 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, ...updates } = body
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Patient ID is required' }, { status: 400 })
+    }
+    
+    console.log('Updating patient with ID:', id, 'updates:', updates)
+    const patient = await serverDb.updatePatient(id, updates)
+    console.log('Patient updated successfully:', patient.id)
+    return NextResponse.json(patient)
+  } catch (error: any) {
+    console.error('Error updating patient:', error)
+    return NextResponse.json({ 
+      error: 'Failed to update patient',
+      details: error.message 
+    }, { status: 500 })
+  }
+}

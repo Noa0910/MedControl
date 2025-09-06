@@ -328,6 +328,96 @@ export const serverDb = {
     return { ...patient, id, created_at: now, updated_at: now }
   },
 
+  async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient> {
+    const pool = getPool()
+    const now = new Date().toISOString()
+    
+    // Construir la consulta UPDATE dinámicamente
+    const updateFields = []
+    const values = []
+    
+    if (updates.first_name !== undefined) {
+      updateFields.push('first_name = ?')
+      values.push(updates.first_name)
+    }
+    if (updates.last_name !== undefined) {
+      updateFields.push('last_name = ?')
+      values.push(updates.last_name)
+    }
+    if (updates.email !== undefined) {
+      updateFields.push('email = ?')
+      values.push(updates.email)
+    }
+    if (updates.phone !== undefined) {
+      updateFields.push('phone = ?')
+      values.push(updates.phone)
+    }
+    if (updates.date_of_birth !== undefined) {
+      updateFields.push('date_of_birth = ?')
+      values.push(updates.date_of_birth)
+    }
+    if (updates.gender !== undefined) {
+      updateFields.push('gender = ?')
+      values.push(updates.gender)
+    }
+    if (updates.address !== undefined) {
+      updateFields.push('address = ?')
+      values.push(updates.address)
+    }
+    if (updates.document_type !== undefined) {
+      updateFields.push('document_type = ?')
+      values.push(updates.document_type)
+    }
+    if (updates.document_number !== undefined) {
+      updateFields.push('document_number = ?')
+      values.push(updates.document_number)
+    }
+    if (updates.eps !== undefined) {
+      updateFields.push('eps = ?')
+      values.push(updates.eps)
+    }
+    if (updates.marital_status !== undefined) {
+      updateFields.push('marital_status = ?')
+      values.push(updates.marital_status)
+    }
+    if (updates.occupation !== undefined) {
+      updateFields.push('occupation = ?')
+      values.push(updates.occupation)
+    }
+    if (updates.emergency_contact_name !== undefined) {
+      updateFields.push('emergency_contact_name = ?')
+      values.push(updates.emergency_contact_name)
+    }
+    if (updates.emergency_contact_phone !== undefined) {
+      updateFields.push('emergency_contact_phone = ?')
+      values.push(updates.emergency_contact_phone)
+    }
+    
+    if (updateFields.length === 0) {
+      throw new Error('No fields to update')
+    }
+    
+    // Agregar updated_at
+    updateFields.push('updated_at = ?')
+    values.push(now)
+    
+    // Agregar el ID al final
+    values.push(id)
+    
+    const query = `UPDATE patients SET ${updateFields.join(', ')} WHERE id = ?`
+    await pool.execute(query, values)
+    
+    // Obtener el paciente actualizado
+    const [rows] = await pool.execute('SELECT * FROM patients WHERE id = ?', [id])
+    const patients = rows as Patient[]
+    
+    if (patients.length === 0) {
+      throw new Error('Patient not found after update')
+    }
+    
+    return patients[0]
+  },
+
   // Citas
   async getAppointments(doctorId?: string): Promise<Appointment[]> {
     const pool = getPool()
