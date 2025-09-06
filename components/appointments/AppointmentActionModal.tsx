@@ -11,12 +11,18 @@ interface Patient {
   phone?: string
   email?: string
   date_of_birth?: string
-  gender?: string
+  gender?: 'male' | 'female' | 'other'
   address?: string
+  document_type?: string
+  document_number?: string
+  eps?: string
+  marital_status?: string
+  occupation?: string
 }
 
 interface Appointment {
   id: string
+  doctor_id: string
   appointment_date: string
   appointment_time: string
   duration: number
@@ -53,7 +59,12 @@ export default function AppointmentActionModal({
       email: '',
       date_of_birth: '',
       gender: '',
-      address: ''
+      address: '',
+      document_type: '',
+      document_number: '',
+      eps: '',
+      marital_status: '',
+      occupation: ''
     }
   })
 
@@ -80,7 +91,12 @@ export default function AppointmentActionModal({
         email: appointment.patients?.email || '',
         date_of_birth: appointment.patients?.date_of_birth || '',
         gender: appointment.patients?.gender || '',
-        address: appointment.patients?.address || ''
+        address: appointment.patients?.address || '',
+        document_type: appointment.patients?.document_type || '',
+        document_number: appointment.patients?.document_number || '',
+        eps: appointment.patients?.eps || '',
+        marital_status: appointment.patients?.marital_status || '',
+        occupation: appointment.patients?.occupation || ''
       }
       console.log('📋 Datos procesados:', patientData)
       setFormData(prev => ({
@@ -97,14 +113,56 @@ export default function AppointmentActionModal({
 
       switch (action) {
         case 'attend':
-          updates = {
-            status: 'completed',
-            patientData: formData.patientData
+          // Validar campos requeridos
+          const requiredFields = ['first_name', 'last_name', 'document_type', 'document_number', 'date_of_birth', 'gender', 'phone', 'email', 'address']
+          const missingFields = requiredFields.filter(field => !formData.patientData[field as keyof typeof formData.patientData])
+          
+          if (missingFields.length > 0) {
+            alert('Por favor complete todos los campos requeridos marcados con *')
+            setLoading(false)
+            return
           }
-          // Mostrar formulario de historia clínica
-          setShowClinicalHistory(true)
-          setLoading(false)
-          return
+
+          try {
+            // Crear el paciente primero
+            const { apiClient } = await import('@/lib/api-client')
+            const patientData = {
+              doctor_id: appointment.doctor_id,
+              first_name: formData.patientData.first_name,
+              last_name: formData.patientData.last_name,
+              phone: formData.patientData.phone,
+              email: formData.patientData.email,
+              date_of_birth: formData.patientData.date_of_birth,
+              gender: formData.patientData.gender as 'male' | 'female' | 'other' | undefined,
+              address: formData.patientData.address,
+              document_type: formData.patientData.document_type,
+              document_number: formData.patientData.document_number,
+              eps: formData.patientData.eps,
+              marital_status: formData.patientData.marital_status,
+              occupation: formData.patientData.occupation
+            }
+
+            const newPatient = await apiClient.createPatient(patientData)
+            console.log('✅ Paciente creado:', newPatient)
+
+            // Actualizar la cita con el ID del paciente
+            updates = {
+              status: 'completed',
+              patient_id: newPatient.id
+            }
+
+            await onUpdate(appointment.id, updates)
+            
+            // Mostrar formulario de historia clínica
+            setShowClinicalHistory(true)
+            setLoading(false)
+            return
+          } catch (patientError) {
+            console.error('Error creating patient:', patientError)
+            alert('Error al crear el paciente. Verifique que no exista ya un paciente con el mismo documento.')
+            setLoading(false)
+            return
+          }
         case 'reschedule':
           updates = {
             appointment_date: formData.newDate,
@@ -134,7 +192,12 @@ export default function AppointmentActionModal({
           email: '',
           date_of_birth: '',
           gender: '',
-          address: ''
+          address: '',
+          document_type: '',
+          document_number: '',
+          eps: '',
+          marital_status: '',
+          occupation: ''
         }
       })
     } catch (error) {
@@ -188,7 +251,12 @@ export default function AppointmentActionModal({
           email: '',
           date_of_birth: '',
           gender: '',
-          address: ''
+          address: '',
+          document_type: '',
+          document_number: '',
+          eps: '',
+          marital_status: '',
+          occupation: ''
         }
       })
       
@@ -213,7 +281,12 @@ export default function AppointmentActionModal({
         email: '',
         date_of_birth: '',
         gender: '',
-        address: ''
+        address: '',
+        document_type: '',
+        document_number: '',
+        eps: '',
+        marital_status: '',
+        occupation: ''
       }
     })
   }
@@ -328,75 +401,240 @@ export default function AppointmentActionModal({
               {action === 'attend' && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Registrar Atención
+                    Completar Datos del Paciente
                   </h3>
                   <div className="space-y-4">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <p className="text-sm text-green-800">
-                        Al marcar como atendido, se creará automáticamente la historia clínica del paciente.
+                        Complete los datos del paciente para crear su perfil y generar la historia clínica.
                       </p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Nombre del Paciente
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.patientData.first_name}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            patientData: { ...prev.patientData, first_name: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Nombre"
-                        />
+                    {/* Información Personal */}
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium text-gray-800 border-b border-gray-200 pb-2">
+                        Información Personal
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Nombre del Paciente *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.patientData.first_name}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, first_name: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Nombre"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Apellido *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.patientData.last_name}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, last_name: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Apellido"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo de Documento *
+                          </label>
+                          <select
+                            value={formData.patientData.document_type}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, document_type: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          >
+                            <option value="">Seleccionar tipo</option>
+                            <option value="CC">Cédula de Ciudadanía</option>
+                            <option value="TI">Tarjeta de Identidad</option>
+                            <option value="CE">Cédula de Extranjería</option>
+                            <option value="PA">Pasaporte</option>
+                            <option value="RC">Registro Civil</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Número de Documento *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.patientData.document_number}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, document_number: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Número de documento"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Fecha de Nacimiento *
+                          </label>
+                          <input
+                            type="date"
+                            value={formData.patientData.date_of_birth}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, date_of_birth: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Sexo/Género *
+                          </label>
+                          <select
+                            value={formData.patientData.gender}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, gender: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          >
+                            <option value="">Seleccionar género</option>
+                            <option value="male">Masculino</option>
+                            <option value="female">Femenino</option>
+                            <option value="other">Otro</option>
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Apellido
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.patientData.last_name}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            patientData: { ...prev.patientData, last_name: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Apellido"
-                        />
+                    </div>
+
+                    {/* Información de Contacto */}
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium text-gray-800 border-b border-gray-200 pb-2">
+                        Información de Contacto
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Teléfono/Celular *
+                          </label>
+                          <input
+                            type="tel"
+                            value={formData.patientData.phone}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, phone: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Teléfono"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email *
+                          </label>
+                          <input
+                            type="email"
+                            value={formData.patientData.email}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, email: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Email"
+                            required
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Dirección de Residencia *
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.patientData.address}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, address: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Dirección completa"
+                            required
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Teléfono
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.patientData.phone}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            patientData: { ...prev.patientData, phone: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Teléfono"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.patientData.email}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            patientData: { ...prev.patientData, email: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Email"
-                        />
+                    </div>
+
+                    {/* Información Adicional */}
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium text-gray-800 border-b border-gray-200 pb-2">
+                        Información Adicional
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            EPS o Aseguradora
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.patientData.eps}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, eps: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="EPS o aseguradora"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Estado Civil
+                          </label>
+                          <select
+                            value={formData.patientData.marital_status}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, marital_status: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Seleccionar estado civil</option>
+                            <option value="soltero">Soltero(a)</option>
+                            <option value="casado">Casado(a)</option>
+                            <option value="divorciado">Divorciado(a)</option>
+                            <option value="viudo">Viudo(a)</option>
+                            <option value="union_libre">Unión Libre</option>
+                          </select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ocupación
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.patientData.occupation}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              patientData: { ...prev.patientData, occupation: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ocupación o profesión"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

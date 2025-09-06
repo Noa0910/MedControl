@@ -22,6 +22,11 @@ export interface Patient {
   date_of_birth?: string
   gender?: 'male' | 'female' | 'other'
   address?: string
+  document_type?: string
+  document_number?: string
+  eps?: string
+  marital_status?: string
+  occupation?: string
   emergency_contact_name?: string
   emergency_contact_phone?: string
   created_at: string
