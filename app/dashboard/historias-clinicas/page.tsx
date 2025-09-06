@@ -54,15 +54,25 @@ export default function ClinicalHistoriesPage() {
   }, [user])
 
   const filteredHistories = histories.filter(history => {
+    // Solo mostrar historias si hay algún filtro activo
+    const hasPatientFilter = patientFilter.trim().length > 0
+    const hasDocumentFilter = documentFilter.trim().length > 0
+    const hasSearchTerm = searchTerm.trim().length > 0
+    
+    // Si no hay ningún filtro activo, no mostrar nada
+    if (!hasPatientFilter && !hasDocumentFilter && !hasSearchTerm) {
+      return false
+    }
+    
     // Filtro por paciente específico (nombre)
-    if (patientFilter.trim()) {
+    if (hasPatientFilter) {
       const patientLower = patientFilter.toLowerCase()
       const fullName = `${history.patient_first_name || ''} ${history.patient_last_name || ''}`.toLowerCase()
       if (!fullName.includes(patientLower)) return false
     }
     
     // Filtro por documento del paciente
-    if (documentFilter.trim()) {
+    if (hasDocumentFilter) {
       const documentLower = documentFilter.toLowerCase()
       // Buscar en el ID del paciente o en cualquier campo que contenga el documento
       const patientId = (history.patient_id || '').toLowerCase()
@@ -70,35 +80,37 @@ export default function ClinicalHistoriesPage() {
     }
     
     // Filtro general por tipo
-    if (!searchTerm.trim()) return true
-    
-    const searchLower = searchTerm.toLowerCase()
-    
-    switch (filterType) {
-      case 'patient':
-        const patientFullName = `${history.patient_first_name || ''} ${history.patient_last_name || ''}`.toLowerCase()
-        return patientFullName.includes(searchLower)
+    if (hasSearchTerm) {
+      const searchLower = searchTerm.toLowerCase()
       
-      case 'document':
-        const patientDocId = (history.patient_id || '').toLowerCase()
-        return patientDocId.includes(searchLower)
-      
-      case 'diagnosis':
-        return (history.diagnosis || '').toLowerCase().includes(searchLower)
-      
-      case 'complaint':
-        return (history.chief_complaint || '').toLowerCase().includes(searchLower)
-      
-      case 'all':
-      default:
-        return (
-          (history.patient_first_name || '').toLowerCase().includes(searchLower) ||
-          (history.patient_last_name || '').toLowerCase().includes(searchLower) ||
-          (history.patient_id || '').toLowerCase().includes(searchLower) ||
-          (history.chief_complaint || '').toLowerCase().includes(searchLower) ||
-          (history.diagnosis || '').toLowerCase().includes(searchLower)
-        )
+      switch (filterType) {
+        case 'patient':
+          const patientFullName = `${history.patient_first_name || ''} ${history.patient_last_name || ''}`.toLowerCase()
+          return patientFullName.includes(searchLower)
+        
+        case 'document':
+          const patientDocId = (history.patient_id || '').toLowerCase()
+          return patientDocId.includes(searchLower)
+        
+        case 'diagnosis':
+          return (history.diagnosis || '').toLowerCase().includes(searchLower)
+        
+        case 'complaint':
+          return (history.chief_complaint || '').toLowerCase().includes(searchLower)
+        
+        case 'all':
+        default:
+          return (
+            (history.patient_first_name || '').toLowerCase().includes(searchLower) ||
+            (history.patient_last_name || '').toLowerCase().includes(searchLower) ||
+            (history.patient_id || '').toLowerCase().includes(searchLower) ||
+            (history.chief_complaint || '').toLowerCase().includes(searchLower) ||
+            (history.diagnosis || '').toLowerCase().includes(searchLower)
+          )
+      }
     }
+    
+    return true
   })
 
   if (loading) {
@@ -216,13 +228,13 @@ export default function ClinicalHistoriesPage() {
             <div className="text-gray-500 text-lg mb-2">
               {searchTerm || patientFilter || documentFilter 
                 ? 'No se encontraron historias que coincidan con los filtros aplicados'
-                : 'No hay historias clínicas registradas'
+                : 'Ingresa el nombre o documento del paciente para buscar sus historias clínicas'
               }
             </div>
             <p className="text-gray-400">
               {searchTerm || patientFilter || documentFilter 
                 ? 'Intenta ajustar los filtros de búsqueda'
-                : 'Las historias clínicas aparecerán aquí cuando se creen'
+                : 'Utiliza los campos de búsqueda arriba para encontrar las historias de un paciente específico'
               }
             </p>
           </div>
