@@ -1,43 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/providers/AuthProvider'
+import { useAuth } from '@/contexts/AuthContext'
 import { apiClient } from '@/lib/api-client'
-import { format } from 'date-fns'
-import { FileText, User, Calendar, Stethoscope, Search, Filter } from 'lucide-react'
 
 interface ClinicalHistory {
   id: string
   patient_id: string
-  doctor_id: string
-  appointment_id: string | null
-  chief_complaint: string
-  current_illness: string
-  medical_history: string
-  surgical_history: string
-  allergies: string
-  medications: string
-  vital_signs: any
-  cardiovascular_exam: string
-  respiratory_exam: string
-  neurological_exam: string
-  gastrointestinal_exam: string
-  genitourinary_exam: string
-  musculoskeletal_exam: string
-  dermatological_exam: string
-  diagnosis: string
-  treatment: string
-  recommendations: string
-  follow_up: string
-  created_at: string
   patient_first_name: string
   patient_last_name: string
-  patient_phone: string
-  patient_email: string
+  doctor_id: string
   doctor_name: string
-  doctor_specialty: string
+  appointment_id: string
   appointment_date: string
   appointment_time: string
+  chief_complaint: string
+  diagnosis: string
+  treatment: string
+  notes: string
+  created_at: string
+  updated_at: string
 }
 
 export default function ClinicalHistoriesPage() {
@@ -116,6 +98,7 @@ export default function ClinicalHistoriesPage() {
           (history.chief_complaint || '').toLowerCase().includes(searchLower) ||
           (history.diagnosis || '').toLowerCase().includes(searchLower)
         )
+    }
   })
 
   if (loading) {
@@ -130,442 +113,264 @@ export default function ClinicalHistoriesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Historias Clínicas
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Gestiona las historias clínicas de tus pacientes
-        </p>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Historias Clínicas</h1>
+          <p className="text-gray-600">Gestiona las historias clínicas de los pacientes</p>
         </div>
-        <button
-          onClick={() => setShowSearchForm(!showSearchForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <Search className="w-4 h-4" />
-          <span>{showSearchForm ? 'Ocultar' : 'Mostrar'} Búsqueda</span>
-        </button>
       </div>
 
-      {/* Filtros y búsqueda */}
-      {showSearchForm && (
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <div className="space-y-6">
-            {/* Búsqueda rápida por nombre */}
-          <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-3">
-                🔍 Buscar por Nombre del Paciente
-            </label>
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                    placeholder="Escribe el nombre completo del paciente..."
-                  value={patientFilter}
-                  onChange={(e) => setPatientFilter(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                />
-              </div>
-              {patientFilter && (
-                <button
-                  onClick={() => setPatientFilter('')}
-                    className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Limpiar
-                  </button>
-                )}
-              </div>
-            </div>
+      {/* Formulario de búsqueda */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Búsqueda de Historias</h2>
+          <button
+            onClick={() => setShowSearchForm(!showSearchForm)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {showSearchForm ? 'Ocultar' : 'Mostrar'} Búsqueda
+          </button>
+        </div>
 
-            {/* Búsqueda por documento */}
+        {showSearchForm && (
+          <div className="space-y-4">
+            {/* Búsqueda por nombre del paciente */}
             <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-3">
-                📄 Buscar por Documento del Paciente
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Buscar por Nombre del Paciente
               </label>
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Escribe el número de documento o ID del paciente..."
-                    value={documentFilter}
-                    onChange={(e) => setDocumentFilter(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                  />
-                </div>
-                {documentFilter && (
-                  <button
-                    onClick={() => setDocumentFilter('')}
-                    className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Limpiar
-                </button>
-              )}
+              <input
+                type="text"
+                value={patientFilter}
+                onChange={(e) => setPatientFilter(e.target.value)}
+                placeholder="Ingresa el nombre del paciente..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-          </div>
 
-          {/* Búsqueda general */}
-          <div>
-              <label className="block text-lg font-semibold text-gray-900 mb-3">
-                🔎 Búsqueda Avanzada
-            </label>
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            {/* Búsqueda por documento del paciente */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Buscar por Documento del Paciente
+              </label>
+              <input
+                type="text"
+                value={documentFilter}
+                onChange={(e) => setDocumentFilter(e.target.value)}
+                placeholder="Ingresa el documento del paciente..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Búsqueda general */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Búsqueda General
+              </label>
+              <div className="flex space-x-4">
                 <input
                   type="text"
-                  placeholder="Buscar en historias clínicas..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                  placeholder="Buscar en todas las historias..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </div>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as any)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-              >
-                <option value="all">Buscar en todo</option>
-                <option value="patient">Solo en nombres</option>
-                  <option value="document">Solo en documentos</option>
-                <option value="diagnosis">Solo en diagnósticos</option>
-                <option value="complaint">Solo en motivos</option>
-              </select>
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                    className="px-4 py-3 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value as any)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Limpiar
-                </button>
-              )}
+                  <option value="all">Buscar en todo</option>
+                  <option value="patient">Solo en nombres</option>
+                  <option value="document">Solo en documentos</option>
+                  <option value="diagnosis">Solo en diagnósticos</option>
+                  <option value="complaint">Solo en motivos</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          {/* Contador de resultados */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-              <div className="text-lg text-gray-700">
-                <span className="font-semibold text-blue-600">{filteredHistories.length}</span> de <span className="font-semibold">{histories.length}</span> historias
-                {(patientFilter || documentFilter) && (
-                  <div className="text-sm text-blue-600 mt-1">
-                    {patientFilter && <span>• Filtrado por nombre: "{patientFilter}"</span>}
-                    {documentFilter && <span>• Filtrado por documento: "{documentFilter}"</span>}
-                  </div>
-              )}
-            </div>
-              {(patientFilter || documentFilter || searchTerm) && (
+            {/* Botones de acción */}
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                {filteredHistories.length} historias encontradas
+              </div>
               <button
                 onClick={() => {
-                  setPatientFilter('')
-                    setDocumentFilter('')
                   setSearchTerm('')
+                  setPatientFilter('')
+                  setDocumentFilter('')
                   setFilterType('all')
                 }}
-                  className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg transition-colors"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50"
               >
                 Limpiar todos los filtros
               </button>
-            )}
-          </div>
+            </div>
           </div>
         )}
-        </div>
       </div>
 
       {/* Lista de historias clínicas */}
       <div className="bg-white rounded-lg shadow">
         {filteredHistories.length === 0 ? (
           <div className="p-8 text-center">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              {patientFilter || documentFilter || searchTerm ? 'No se encontraron historias' : 'No hay historias clínicas'}
-            </h3>
-            <p className="text-gray-600 text-lg">
-              {patientFilter ? (
-                <>
-                  No se encontraron historias para el paciente "<span className="font-semibold text-blue-600">{patientFilter}</span>"
-                  <br />
-                  <span className="text-sm text-gray-500">Intenta con otro nombre o verifica la ortografía</span>
-                </>
-              ) : documentFilter ? (
-                <>
-                  No se encontraron historias para el documento "<span className="font-semibold text-blue-600">{documentFilter}</span>"
-                  <br />
-                  <span className="text-sm text-gray-500">Verifica el número de documento o ID del paciente</span>
-                </>
-              ) : searchTerm ? (
-                <>
-                  No se encontraron historias que coincidan con "<span className="font-semibold text-blue-600">{searchTerm}</span>"
-                  <br />
-                  <span className="text-sm text-gray-500">Intenta con otros términos de búsqueda</span>
-                </>
-              ) : (
-                <>
-                  Las historias clínicas aparecerán aquí cuando atiendas pacientes
-                  <br />
-                  <span className="text-sm text-gray-500">Usa el formulario de búsqueda para encontrar historias específicas</span>
-                </>
-              )}
+            <div className="text-gray-500 text-lg mb-2">
+              {searchTerm || patientFilter || documentFilter 
+                ? 'No se encontraron historias que coincidan con los filtros aplicados'
+                : 'No hay historias clínicas registradas'
+              }
+            </div>
+            <p className="text-gray-400">
+              {searchTerm || patientFilter || documentFilter 
+                ? 'Intenta ajustar los filtros de búsqueda'
+                : 'Las historias clínicas aparecerán aquí cuando se creen'
+              }
             </p>
-            {(patientFilter || documentFilter || searchTerm) && (
-              <button
-                onClick={() => {
-                  setPatientFilter('')
-                  setDocumentFilter('')
-                  setSearchTerm('')
-                  setFilterType('all')
-                }}
-                className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Limpiar todos los filtros
-              </button>
-            )}
           </div>
         ) : (
-          <div>
-            {/* Indicador de filtro activo */}
-            {(patientFilter || documentFilter) && (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <User className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-blue-700">
-                      <span className="font-medium">Filtrado activo:</span>
-                      {patientFilter && <span> Mostrando historias de <span className="font-semibold">{patientFilter}</span></span>}
-                      {documentFilter && <span> Documento: <span className="font-semibold">{documentFilter}</span></span>}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="divide-y divide-gray-200">
-              {filteredHistories.map((history) => (
-              <div
-                key={history.id}
-                className="p-6 hover:bg-gray-50 cursor-pointer"
-                onClick={() => setSelectedHistory(history)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-blue-600" />
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Paciente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Doctor
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Motivo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Diagnóstico
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredHistories.map((history) => (
+                  <tr key={history.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {history.patient_first_name} {history.patient_last_name}
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {history.patient_first_name} {history.patient_last_name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {history.patient_phone} • {history.patient_email}
-                        </p>
+                      <div className="text-sm text-gray-500">
+                        ID: {history.patient_id}
                       </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">Motivo de consulta:</span>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {history.chief_complaint}
-                        </p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {history.doctor_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(history.appointment_date).toLocaleDateString()} {history.appointment_time}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                        {history.chief_complaint}
                       </div>
-                      
-                      {history.diagnosis && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Diagnóstico:</span>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {history.diagnosis}
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{format(new Date(history.created_at), 'dd/MM/yyyy')}</span>
-                        </div>
-                        {history.appointment_date && (
-                          <div className="flex items-center space-x-1">
-                            <Stethoscope className="w-4 h-4" />
-                            <span>{format(new Date(history.appointment_date), 'dd/MM/yyyy')} {history.appointment_time}</span>
-                          </div>
-                        )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                        {history.diagnosis}
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">
-                      {format(new Date(history.created_at), 'HH:mm')}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Ver detalles →
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => setSelectedHistory(history)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        Ver
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       {/* Modal de detalles */}
       {selectedHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Header del modal */}
-            <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      Historia Clínica
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      {selectedHistory.patient_first_name} {selectedHistory.patient_last_name}
-                    </p>
-                  </div>
-                </div>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Historia Clínica - {selectedHistory.patient_first_name} {selectedHistory.patient_last_name}
+                </h3>
                 <button
                   onClick={() => setSelectedHistory(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  ✕
+                  <span className="sr-only">Cerrar</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-            </div>
 
-            {/* Contenido del modal */}
-            <div className="p-6 space-y-6">
-              {/* Información del paciente */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Información del Paciente</h3>
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">Nombre:</span>
-                    <p className="text-sm text-gray-600">{selectedHistory.patient_first_name} {selectedHistory.patient_last_name}</p>
+                    <label className="block text-sm font-medium text-gray-700">Paciente</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedHistory.patient_first_name} {selectedHistory.patient_last_name}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-700">Teléfono:</span>
-                    <p className="text-sm text-gray-600">{selectedHistory.patient_phone || 'No especificado'}</p>
+                    <label className="block text-sm font-medium text-gray-700">ID del Paciente</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedHistory.patient_id}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-700">Email:</span>
-                    <p className="text-sm text-gray-600">{selectedHistory.patient_email || 'No especificado'}</p>
+                    <label className="block text-sm font-medium text-gray-700">Doctor</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedHistory.doctor_name}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-700">Fecha de consulta:</span>
-                    <p className="text-sm text-gray-600">
-                      {format(new Date(selectedHistory.created_at), 'dd/MM/yyyy HH:mm')}
+                    <label className="block text-sm font-medium text-gray-700">Fecha y Hora</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {new Date(selectedHistory.appointment_date).toLocaleDateString()} {selectedHistory.appointment_time}
                     </p>
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Motivo de Consulta</label>
+                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                    {selectedHistory.chief_complaint}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Diagnóstico</label>
+                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                    {selectedHistory.diagnosis}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tratamiento</label>
+                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                    {selectedHistory.treatment}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Notas Adicionales</label>
+                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                    {selectedHistory.notes || 'No hay notas adicionales'}
+                  </p>
+                </div>
               </div>
 
-              {/* Motivo de consulta */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Motivo de Consulta</h3>
-                <p className="text-gray-700">{selectedHistory.chief_complaint}</p>
-              </div>
-
-              {/* Enfermedad actual */}
-              {selectedHistory.current_illness && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Enfermedad Actual</h3>
-                  <p className="text-gray-700">{selectedHistory.current_illness}</p>
-                </div>
-              )}
-
-              {/* Antecedentes */}
-              {(selectedHistory.medical_history || selectedHistory.surgical_history || selectedHistory.allergies) && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Antecedentes</h3>
-                  <div className="space-y-3">
-                    {selectedHistory.medical_history && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">Médicos:</span>
-                        <p className="text-sm text-gray-600">{selectedHistory.medical_history}</p>
-                      </div>
-                    )}
-                    {selectedHistory.surgical_history && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">Quirúrgicos:</span>
-                        <p className="text-sm text-gray-600">{selectedHistory.surgical_history}</p>
-                      </div>
-                    )}
-                    {selectedHistory.allergies && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">Alergias:</span>
-                        <p className="text-sm text-gray-600">{selectedHistory.allergies}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Signos vitales */}
-              {selectedHistory.vital_signs && Object.keys(selectedHistory.vital_signs).length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Signos Vitales</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {Object.entries(selectedHistory.vital_signs).map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 p-3 rounded">
-                        <span className="text-sm font-medium text-gray-700 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}:
-                        </span>
-                        <p className="text-sm text-gray-600">{value as string}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Diagnóstico */}
-              {selectedHistory.diagnosis && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Diagnóstico</h3>
-                  <p className="text-gray-700">{selectedHistory.diagnosis}</p>
-                </div>
-              )}
-
-              {/* Tratamiento */}
-              {selectedHistory.treatment && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tratamiento</h3>
-                  <p className="text-gray-700">{selectedHistory.treatment}</p>
-                </div>
-              )}
-
-              {/* Recomendaciones */}
-              {selectedHistory.recommendations && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Recomendaciones</h3>
-                  <p className="text-gray-700">{selectedHistory.recommendations}</p>
-                </div>
-              )}
-
-              {/* Control de seguimiento */}
-              {selectedHistory.follow_up && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Control de Seguimiento</h3>
-                  <p className="text-gray-700">{selectedHistory.follow_up}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer del modal */}
-            <div className="p-6 border-t bg-gray-50">
-              <div className="flex justify-end">
+              <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setSelectedHistory(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Cerrar
                 </button>
