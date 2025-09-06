@@ -197,6 +197,15 @@ export default function AppointmentActionModal({
 
             await onUpdate(appointment.id, updates)
             
+            // Actualizar los datos del paciente en formData con el ID del nuevo paciente
+            setFormData(prev => ({
+              ...prev,
+              patientData: {
+                ...prev.patientData,
+                id: newPatient.id
+              }
+            }))
+            
             // Mostrar formulario de historia clínica
             setShowClinicalHistory(true)
             setLoading(false)
