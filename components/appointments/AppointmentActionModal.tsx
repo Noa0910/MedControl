@@ -218,7 +218,9 @@ export default function AppointmentActionModal({
 
               // Actualizar el paciente existente con los datos completos
               console.log('🔄 Actualizando paciente existente con datos completos...')
+              console.log('🔄 Asignando paciente al doctor:', appointment.doctor_id)
               const updatedPatient = await apiClient.updatePatient(appointment.patient_id, {
+                doctor_id: appointment.doctor_id, // Asignar al doctor de la cita
                 document_type: formData.patientData.document_type,
                 document_number: formData.patientData.document_number,
                 date_of_birth: formData.patientData.date_of_birth,

@@ -393,6 +393,10 @@ export const serverDb = {
       updateFields.push('emergency_contact_phone = ?')
       values.push(updates.emergency_contact_phone)
     }
+    if (updates.doctor_id !== undefined) {
+      updateFields.push('doctor_id = ?')
+      values.push(updates.doctor_id)
+    }
     
     if (updateFields.length === 0) {
       throw new Error('No fields to update')
