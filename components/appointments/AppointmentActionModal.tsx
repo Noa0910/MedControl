@@ -157,66 +157,128 @@ export default function AppointmentActionModal({
 
       switch (action) {
         case 'attend':
-          // Validar campos requeridos
-          const requiredFields = ['first_name', 'last_name', 'document_type', 'document_number', 'date_of_birth', 'gender', 'phone', 'email', 'address']
-          const missingFields = requiredFields.filter(field => !formData.patientData[field as keyof typeof formData.patientData])
-          
-          if (missingFields.length > 0) {
-            alert('Por favor complete todos los campos requeridos marcados con *')
-            setLoading(false)
-            return
-          }
+          // Verificar si es un paciente existente con datos completos
+          const hasCompleteData = appointment.patients?.first_name && 
+            appointment.patients?.last_name && 
+            appointment.patients?.document_type && 
+            appointment.patients?.document_number && 
+            appointment.patients?.date_of_birth && 
+            appointment.patients?.gender
 
-          try {
-            // Crear el paciente primero
-            const { apiClient } = await import('@/lib/api-client')
-            const patientData = {
-              doctor_id: appointment.doctor_id,
-              first_name: formData.patientData.first_name,
-              last_name: formData.patientData.last_name,
-              phone: formData.patientData.phone,
-              email: formData.patientData.email,
-              date_of_birth: formData.patientData.date_of_birth,
-              gender: formData.patientData.gender as 'male' | 'female' | 'other' | undefined,
-              address: formData.patientData.address,
-              document_type: formData.patientData.document_type,
-              document_number: formData.patientData.document_number,
-              eps: formData.patientData.eps,
-              marital_status: formData.patientData.marital_status,
-              occupation: formData.patientData.occupation
-            }
-
-            const newPatient = await apiClient.createPatient(patientData)
-            console.log('✅ Paciente creado:', newPatient)
-
-            // Actualizar la cita con el ID del paciente
+          if (hasCompleteData) {
+            // Paciente existente - solo actualizar cita y abrir historia clínica
+            console.log('✅ Paciente existente, actualizando cita y abriendo historia clínica')
+            
             updates = {
               status: 'completed',
-              patient_id: newPatient.id
+              patient_id: appointment.patient_id
             }
 
             await onUpdate(appointment.id, updates)
             
-            // Actualizar los datos del paciente en formData con el ID del nuevo paciente
-            setFormData(prev => ({
-              ...prev,
-              patientData: {
-                ...prev.patientData,
-                id: newPatient.id
-              }
-            }))
-            
-            // Mostrar formulario de historia clínica
-            console.log('🎯 Abriendo formulario de historia clínica...')
+            // Mostrar formulario de historia clínica directamente
+            console.log('🎯 Abriendo formulario de historia clínica para paciente existente...')
             setShowClinicalHistory(true)
             setLoading(false)
             console.log('✅ Formulario de historia clínica abierto')
             return
-          } catch (patientError) {
-            console.error('Error creating patient:', patientError)
-            alert('Error al crear el paciente. Verifique que no exista ya un paciente con el mismo documento.')
-            setLoading(false)
-            return
+          } else {
+            // Paciente nuevo o incompleto - validar y crear
+            const requiredFields = ['first_name', 'last_name', 'document_type', 'document_number', 'date_of_birth', 'gender', 'phone', 'email', 'address']
+            const missingFields = requiredFields.filter(field => !formData.patientData[field as keyof typeof formData.patientData])
+            
+            if (missingFields.length > 0) {
+              alert('Por favor complete todos los campos requeridos marcados con *')
+              setLoading(false)
+              return
+            }
+
+            try {
+              // Verificar si el paciente ya existe por documento
+              const { apiClient } = await import('@/lib/api-client')
+              const existingPatients = await apiClient.getPatients()
+              const existingPatient = existingPatients.find(p => 
+                p.document_type === formData.patientData.document_type && 
+                p.document_number === formData.patientData.document_number
+              )
+
+              if (existingPatient) {
+                // Paciente ya existe - usar el existente
+                console.log('✅ Paciente ya existe, usando el existente:', existingPatient)
+                
+                updates = {
+                  status: 'completed',
+                  patient_id: existingPatient.id
+                }
+
+                await onUpdate(appointment.id, updates)
+                
+                // Actualizar formData con el paciente existente
+                setFormData(prev => ({
+                  ...prev,
+                  patientData: {
+                    ...prev.patientData,
+                    id: existingPatient.id
+                  }
+                }))
+                
+                // Mostrar formulario de historia clínica
+                console.log('🎯 Abriendo formulario de historia clínica para paciente existente...')
+                setShowClinicalHistory(true)
+                setLoading(false)
+                console.log('✅ Formulario de historia clínica abierto')
+                return
+              } else {
+                // Crear nuevo paciente
+                const patientData = {
+                  doctor_id: appointment.doctor_id,
+                  first_name: formData.patientData.first_name,
+                  last_name: formData.patientData.last_name,
+                  phone: formData.patientData.phone,
+                  email: formData.patientData.email,
+                  date_of_birth: formData.patientData.date_of_birth,
+                  gender: formData.patientData.gender as 'male' | 'female' | 'other' | undefined,
+                  address: formData.patientData.address,
+                  document_type: formData.patientData.document_type,
+                  document_number: formData.patientData.document_number,
+                  eps: formData.patientData.eps,
+                  marital_status: formData.patientData.marital_status,
+                  occupation: formData.patientData.occupation
+                }
+
+                const newPatient = await apiClient.createPatient(patientData)
+                console.log('✅ Paciente nuevo creado:', newPatient)
+
+                // Actualizar la cita con el ID del paciente
+                updates = {
+                  status: 'completed',
+                  patient_id: newPatient.id
+                }
+
+                await onUpdate(appointment.id, updates)
+                
+                // Actualizar los datos del paciente en formData con el ID del nuevo paciente
+                setFormData(prev => ({
+                  ...prev,
+                  patientData: {
+                    ...prev.patientData,
+                    id: newPatient.id
+                  }
+                }))
+                
+                // Mostrar formulario de historia clínica
+                console.log('🎯 Abriendo formulario de historia clínica para paciente nuevo...')
+                setShowClinicalHistory(true)
+                setLoading(false)
+                console.log('✅ Formulario de historia clínica abierto')
+                return
+              }
+            } catch (patientError) {
+              console.error('Error creating patient:', patientError)
+              alert('Error al crear el paciente. Verifique que no exista ya un paciente con el mismo documento.')
+              setLoading(false)
+              return
+            }
           }
         case 'reschedule':
           updates = {
