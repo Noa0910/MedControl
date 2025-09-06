@@ -99,7 +99,12 @@ export default function CalendarView() {
               email: patient.email,
               date_of_birth: patient.date_of_birth,
               gender: patient.gender,
-              address: patient.address
+              address: patient.address,
+              document_type: patient.document_type,
+              document_number: patient.document_number,
+              eps: patient.eps,
+              marital_status: patient.marital_status,
+              occupation: patient.occupation
             } : {
               first_name: 'Paciente',
               last_name: 'No encontrado',
@@ -107,7 +112,12 @@ export default function CalendarView() {
               email: '',
               date_of_birth: '',
               gender: '',
-              address: ''
+              address: '',
+              document_type: '',
+              document_number: '',
+              eps: '',
+              marital_status: '',
+              occupation: ''
             }
           }
         })

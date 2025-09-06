@@ -263,6 +263,20 @@ export const serverDb = {
       database: process.env.DB_NAME || 'medcontrol'
     })
     
+    // Verificar si ya existe un paciente con el mismo documento
+    if (patient.document_type && patient.document_number) {
+      const [existingPatients] = await connection.execute(
+        'SELECT id, first_name, last_name FROM patients WHERE document_type = ? AND document_number = ?',
+        [patient.document_type, patient.document_number]
+      )
+      
+      if (existingPatients.length > 0) {
+        await connection.end()
+        const existing = existingPatients[0] as any
+        throw new Error(`Ya existe un paciente con el documento ${patient.document_type} ${patient.document_number}: ${existing.first_name} ${existing.last_name}`)
+      }
+    }
+    
     const id = uuidv4()
     const now = new Date().toISOString()
     
@@ -287,7 +301,7 @@ export const serverDb = {
     }
     
     await connection.execute(
-      'INSERT INTO patients (id, doctor_id, first_name, last_name, email, phone, date_of_birth, gender, address, emergency_contact_name, emergency_contact_phone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO patients (id, doctor_id, first_name, last_name, email, phone, date_of_birth, gender, address, document_type, document_number, eps, marital_status, occupation, emergency_contact_name, emergency_contact_phone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id, 
         doctorId, 
@@ -298,6 +312,11 @@ export const serverDb = {
         patient.date_of_birth || null, 
         patient.gender || null, 
         patient.address || null, 
+        patient.document_type || null,
+        patient.document_number || null,
+        patient.eps || null,
+        patient.marital_status || null,
+        patient.occupation || null,
         patient.emergency_contact_name || null, 
         patient.emergency_contact_phone || null, 
         now, 

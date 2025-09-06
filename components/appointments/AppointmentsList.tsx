@@ -78,12 +78,28 @@ export default function AppointmentsList() {
               first_name: patient.first_name,
               last_name: patient.last_name,
               phone: patient.phone,
-              email: patient.email
+              email: patient.email,
+              date_of_birth: patient.date_of_birth,
+              gender: patient.gender,
+              address: patient.address,
+              document_type: patient.document_type,
+              document_number: patient.document_number,
+              eps: patient.eps,
+              marital_status: patient.marital_status,
+              occupation: patient.occupation
             } : {
               first_name: 'Paciente',
               last_name: 'No encontrado',
               phone: '',
-              email: ''
+              email: '',
+              date_of_birth: '',
+              gender: '',
+              address: '',
+              document_type: '',
+              document_number: '',
+              eps: '',
+              marital_status: '',
+              occupation: ''
             }
           }
         })
