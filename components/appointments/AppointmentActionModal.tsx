@@ -207,8 +207,10 @@ export default function AppointmentActionModal({
             }))
             
             // Mostrar formulario de historia clínica
+            console.log('🎯 Abriendo formulario de historia clínica...')
             setShowClinicalHistory(true)
             setLoading(false)
+            console.log('✅ Formulario de historia clínica abierto')
             return
           } catch (patientError) {
             console.error('Error creating patient:', patientError)
@@ -231,9 +233,12 @@ export default function AppointmentActionModal({
           break
       }
 
-      await onUpdate(appointment.id, updates)
-      onClose()
-      setAction(null)
+      // Solo cerrar el modal para reschedule y no_show, no para attend
+      if (action !== 'attend') {
+        await onUpdate(appointment.id, updates)
+        onClose()
+        setAction(null)
+      }
       setFormData({
         newDate: '',
         newTime: '',
@@ -803,7 +808,7 @@ export default function AppointmentActionModal({
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>Paciente existente:</strong> Proceda a completar la historia clínica del paciente.
+              <strong>Paciente creado:</strong> Proceda a completar la historia clínica del paciente.
             </p>
           </div>
           <ClinicalHistoryForm
@@ -811,6 +816,13 @@ export default function AppointmentActionModal({
             onSave={handleClinicalHistorySave}
             onClose={() => setShowClinicalHistory(false)}
           />
+        </div>
+      )}
+      
+      {/* Debug info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+          showClinicalHistory: {showClinicalHistory ? 'true' : 'false'}
         </div>
       )}
     </div>
