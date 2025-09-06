@@ -83,22 +83,46 @@ export default function AppointmentActionModal({
         newTime: format(now, 'HH:mm')
       }))
     } else if (selectedAction === 'attend') {
-      // Verificar si el paciente ya existe (tiene ID y datos completos)
-      const hasPatientId = appointment.patients?.id && appointment.patients.id !== 'temp'
+      // Verificar si el paciente tiene datos completos (documento, fecha nacimiento, género)
       const hasCompleteData = appointment.patients?.document_type && 
                              appointment.patients?.document_number && 
                              appointment.patients?.date_of_birth && 
                              appointment.patients?.gender
       
       console.log('🔍 Verificando paciente:', {
-        hasPatientId,
         hasCompleteData,
-        patient: appointment.patients
+        patient: appointment.patients,
+        document_type: appointment.patients?.document_type,
+        document_number: appointment.patients?.document_number,
+        date_of_birth: appointment.patients?.date_of_birth,
+        gender: appointment.patients?.gender
       })
       
-      if (hasPatientId && hasCompleteData) {
-        // Paciente existente - ir directamente a historia clínica
-        console.log('✅ Paciente existente, yendo a historia clínica')
+      if (hasCompleteData) {
+        // Paciente existente con datos completos - ir directamente a historia clínica
+        console.log('✅ Paciente existente con datos completos, yendo a historia clínica')
+        
+        // Pre-llenar datos del paciente para la historia clínica
+        const patientData = {
+          first_name: appointment.patients?.first_name || '',
+          last_name: appointment.patients?.last_name || '',
+          phone: appointment.patients?.phone || '',
+          email: appointment.patients?.email || '',
+          date_of_birth: appointment.patients?.date_of_birth || '',
+          gender: appointment.patients?.gender || '',
+          address: appointment.patients?.address || '',
+          document_type: appointment.patients?.document_type || '',
+          document_number: appointment.patients?.document_number || '',
+          eps: appointment.patients?.eps || '',
+          marital_status: appointment.patients?.marital_status || '',
+          occupation: appointment.patients?.occupation || ''
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          patientData
+        }))
+        
         setShowClinicalHistory(true)
         return
       } else {
