@@ -1,0 +1,520 @@
+'use client'
+
+import { useState } from 'react'
+import { format } from 'date-fns'
+import { Clock, Calendar, User, FileText, X, CheckCircle, AlertCircle, RotateCcw } from 'lucide-react'
+import ClinicalHistoryForm from '../medical/ClinicalHistoryForm'
+
+interface Patient {
+  first_name: string
+  last_name: string
+  phone?: string
+  email?: string
+  date_of_birth?: string
+  gender?: string
+  address?: string
+}
+
+interface Appointment {
+  id: string
+  appointment_date: string
+  appointment_time: string
+  duration: number
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  title: string
+  description?: string
+  patients: Patient
+}
+
+interface AppointmentActionModalProps {
+  appointment: Appointment | null
+  isOpen: boolean
+  onClose: () => void
+  onUpdate: (appointmentId: string, updates: any) => void
+}
+
+export default function AppointmentActionModal({ 
+  appointment, 
+  isOpen, 
+  onClose, 
+  onUpdate 
+}: AppointmentActionModalProps) {
+  const [action, setAction] = useState<'attend' | 'reschedule' | 'no_show' | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [showClinicalHistory, setShowClinicalHistory] = useState(false)
+  const [formData, setFormData] = useState({
+    newDate: '',
+    newTime: '',
+    noShowReason: '',
+    patientData: {
+      first_name: '',
+      last_name: '',
+      phone: '',
+      email: '',
+      date_of_birth: '',
+      gender: '',
+      address: ''
+    }
+  })
+
+  if (!isOpen || !appointment) return null
+
+  const handleAction = (selectedAction: 'attend' | 'reschedule' | 'no_show') => {
+    setAction(selectedAction)
+    
+    if (selectedAction === 'reschedule') {
+      // Pre-llenar con fecha y hora actual
+      const now = new Date()
+      setFormData(prev => ({
+        ...prev,
+        newDate: format(now, 'yyyy-MM-dd'),
+        newTime: format(now, 'HH:mm')
+      }))
+    } else if (selectedAction === 'attend') {
+      // Pre-llenar con datos del paciente de la cita
+      console.log('📋 Datos del paciente para pre-llenar:', appointment.patients)
+      const patientData = {
+        first_name: appointment.patients?.first_name || '',
+        last_name: appointment.patients?.last_name || '',
+        phone: appointment.patients?.phone || '',
+        email: appointment.patients?.email || '',
+        date_of_birth: appointment.patients?.date_of_birth || '',
+        gender: appointment.patients?.gender || '',
+        address: appointment.patients?.address || ''
+      }
+      console.log('📋 Datos procesados:', patientData)
+      setFormData(prev => ({
+        ...prev,
+        patientData
+      }))
+    }
+  }
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    try {
+      let updates: any = {}
+
+      switch (action) {
+        case 'attend':
+          updates = {
+            status: 'completed',
+            patientData: formData.patientData
+          }
+          // Mostrar formulario de historia clínica
+          setShowClinicalHistory(true)
+          setLoading(false)
+          return
+        case 'reschedule':
+          updates = {
+            appointment_date: formData.newDate,
+            appointment_time: formData.newTime,
+            status: 'confirmed'
+          }
+          break
+        case 'no_show':
+          updates = {
+            status: 'no_show',
+            no_show_reason: formData.noShowReason
+          }
+          break
+      }
+
+      await onUpdate(appointment.id, updates)
+      onClose()
+      setAction(null)
+      setFormData({
+        newDate: '',
+        newTime: '',
+        noShowReason: '',
+        patientData: {
+          first_name: '',
+          last_name: '',
+          phone: '',
+          email: '',
+          date_of_birth: '',
+          gender: '',
+          address: ''
+        }
+      })
+    } catch (error) {
+      console.error('Error updating appointment:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClinicalHistorySave = async (historyData: any) => {
+    try {
+      console.log('🔄 Guardando historia clínica:', historyData)
+      console.log('👤 Datos del paciente:', {
+        patient_id: (appointment as any).patient_id,
+        doctor_id: (appointment as any).doctor_id,
+        appointment_id: appointment.id
+      })
+      
+      // Importar apiClient dinámicamente para evitar problemas de SSR
+      const { apiClient } = await import('@/lib/api-client')
+      
+      // Crear la historia clínica
+      console.log('📝 Creando historia clínica...')
+      const historyResult = await apiClient.createClinicalHistory(
+        (appointment as any).patient_id,
+        (appointment as any).doctor_id,
+        appointment.id,
+        historyData
+      )
+      console.log('✅ Historia clínica creada:', historyResult)
+      
+      // Actualizar la cita como completada
+      console.log('🔄 Actualizando cita como completada...')
+      await onUpdate(appointment.id, {
+        status: 'completed',
+        patientData: formData.patientData
+      })
+      console.log('✅ Cita actualizada correctamente')
+      
+      setShowClinicalHistory(false)
+      onClose()
+      setAction(null)
+      setFormData({
+        newDate: '',
+        newTime: '',
+        noShowReason: '',
+        patientData: {
+          first_name: '',
+          last_name: '',
+          phone: '',
+          email: '',
+          date_of_birth: '',
+          gender: '',
+          address: ''
+        }
+      })
+      
+      console.log('🎉 Proceso completado exitosamente')
+    } catch (error) {
+      console.error('❌ Error saving clinical history:', error)
+      alert('Error al guardar la historia clínica: ' + (error as Error).message)
+      throw error
+    }
+  }
+
+  const handleCancel = () => {
+    setAction(null)
+    setFormData({
+      newDate: '',
+      newTime: '',
+      noShowReason: '',
+      patientData: {
+        first_name: '',
+        last_name: '',
+        phone: '',
+        email: '',
+        date_of_birth: '',
+        gender: '',
+        address: ''
+      }
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="p-6 border-b">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Gestionar Cita
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Información de la cita */}
+        <div className="p-6 border-b bg-gray-50">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-gray-900">
+                {appointment.patients.first_name} {appointment.patients.last_name}
+              </h3>
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>{format(new Date(appointment.appointment_date), 'dd/MM/yyyy')}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <Clock className="w-4 h-4 mr-2" />
+                  <span>{appointment.appointment_time}</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <strong>Motivo:</strong> {appointment.title}
+                </div>
+                {appointment.description && (
+                  <div className="text-sm text-gray-600">
+                    <strong>Descripción:</strong> {appointment.description}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Acciones */}
+        <div className="p-6">
+          {!action ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                ¿Qué acción deseas realizar?
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Atender */}
+                <button
+                  onClick={() => handleAction('attend')}
+                  className="p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                    <div>
+                      <h4 className="font-medium text-green-900">Atender</h4>
+                      <p className="text-sm text-green-700">Marcar como atendido y crear historia clínica</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Reprogramar */}
+                <button
+                  onClick={() => handleAction('reschedule')}
+                  className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <RotateCcw className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <h4 className="font-medium text-blue-900">Reprogramar</h4>
+                      <p className="text-sm text-blue-700">Cambiar fecha y hora de la cita</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* No asistió */}
+                <button
+                  onClick={() => handleAction('no_show')}
+                  className="p-4 border-2 border-red-200 rounded-lg hover:border-red-400 hover:bg-red-50 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <AlertCircle className="w-8 h-8 text-red-600" />
+                    <div>
+                      <h4 className="font-medium text-red-900">No Asistió</h4>
+                      <p className="text-sm text-red-700">Marcar como no asistió con motivo</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Formulario según la acción */}
+              {action === 'attend' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Registrar Atención
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-green-800">
+                        Al marcar como atendido, se creará automáticamente la historia clínica del paciente.
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nombre del Paciente
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.patientData.first_name}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, first_name: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Nombre"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Apellido
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.patientData.last_name}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, last_name: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Apellido"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Teléfono
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.patientData.phone}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, phone: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Teléfono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.patientData.email}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            patientData: { ...prev.patientData, email: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Email"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {action === 'reschedule' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Reprogramar Cita
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nueva Fecha
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.newDate}
+                          onChange={(e) => setFormData(prev => ({ ...prev, newDate: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nueva Hora
+                        </label>
+                        <input
+                          type="time"
+                          value={formData.newTime}
+                          onChange={(e) => setFormData(prev => ({ ...prev, newTime: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {action === 'no_show' && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Marcar como No Asistió
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Motivo de No Asistencia
+                      </label>
+                      <select
+                        value={formData.noShowReason}
+                        onChange={(e) => setFormData(prev => ({ ...prev, noShowReason: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Seleccionar motivo</option>
+                        <option value="no_contact">No se pudo contactar</option>
+                        <option value="cancelled_by_patient">Cancelado por el paciente</option>
+                        <option value="forgot">Se olvidó de la cita</option>
+                        <option value="emergency">Emergencia personal</option>
+                        <option value="transport">Problemas de transporte</option>
+                        <option value="other">Otro</option>
+                      </select>
+                    </div>
+                    {formData.noShowReason === 'other' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Especificar motivo
+                        </label>
+                        <textarea
+                          value={formData.noShowReason}
+                          onChange={(e) => setFormData(prev => ({ ...prev, noShowReason: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows={3}
+                          placeholder="Describe el motivo..."
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Botones de acción */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 ${
+                    action === 'attend' ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' :
+                    action === 'reschedule' ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500' :
+                    'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {loading ? 'Procesando...' : 
+                   action === 'attend' ? 'Atender' :
+                   action === 'reschedule' ? 'Reprogramar' :
+                   'Marcar No Asistió'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Formulario de Historia Clínica */}
+      {showClinicalHistory && (
+        <ClinicalHistoryForm
+          patient={formData.patientData}
+          onSave={handleClinicalHistorySave}
+          onClose={() => setShowClinicalHistory(false)}
+        />
+      )}
+    </div>
+  )
+}
